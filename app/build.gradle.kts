@@ -5,6 +5,7 @@
  * For more details take a look at the 'Building Java & JVM projects' chapter in the Gradle
  * User Manual available at https://docs.gradle.org/8.0.2/userguide/building_java_projects.html
  */
+import com.google.protobuf.gradle.*
 
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
@@ -12,6 +13,7 @@ plugins {
     kotlin("jvm") version "1.8.21"
 
     id("io.ktor.plugin") version "2.3.0"
+    id("com.google.protobuf") version "0.9.3"
 }
 
 repositories {
@@ -32,7 +34,13 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
     implementation("io.ktor:ktor-server-core")
     implementation("io.ktor:ktor-server-netty")
+
+    implementation("io.grpc:grpc-kotlin-stub:1.3.0")
+    implementation("io.grpc:grpc-protobuf:1.55.1")
+    implementation("com.google.protobuf:protobuf-kotlin:3.23.0")
 }
+
+
 
 application {
     // Define the main class for the application.
@@ -42,4 +50,35 @@ application {
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+ext["grpcVersion"] = "1.54.1"
+ext["grpcKotlinVersion"] = "1.3.0" // CURRENT_GRPC_KOTLIN_VERSION
+ext["protobufVersion"] = "3.22.3"
+ext["coroutinesVersion"] = "1.7.0"
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.22.3"
+    }
+    plugins {
+        id("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.54.1"
+        }
+        id("grpckt") {
+            path = tasks.jar.get().archiveFile.get().asFile.absolutePath
+        }
+    }
+    generateProtoTasks {
+        all().forEach {
+            if (it.name.startsWith("generateTestProto")) {
+                it.dependsOn("jar")
+            }
+
+            it.plugins {
+                id("grpc")
+                id("grpckt")
+            }
+        }
+    }
 }
