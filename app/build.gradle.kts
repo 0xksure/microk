@@ -8,12 +8,12 @@
 import com.google.protobuf.gradle.*
 
 plugins {
-    // Apply the application plugin to add support for building a CLI application in Java.
     application
+    // Apply the application plugin to add support for building a CLI application in Java
     kotlin("jvm") version "1.8.21"
 
     id("io.ktor.plugin") version "2.3.0"
-    id("com.google.protobuf") version "0.9.3"
+    id("com.google.protobuf")
 }
 
 repositories {
@@ -22,62 +22,53 @@ repositories {
 }
 
 dependencies {
+    protobuf(project(":protos"))
     // Use JUnit Jupiter for testing.
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.1")
+    runtimeOnly("io.grpc:grpc-netty:${rootProject.ext["grpcVersion"]}")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:${rootProject.ext["coroutinesVersion"]}")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
+    implementation("io.grpc:grpc-kotlin-stub:1.1.0")
 
-    // This dependency is used by the application.
-    implementation("com.google.guava:guava:31.1-jre")
-
-    // ktor
-    implementation("ch.qos.logback:logback-classic:1.3.5")
-    implementation("org.apache.logging.log4j:log4j-core:2.20.0")
-    implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
-    implementation("io.ktor:ktor-server-core")
-    implementation("io.ktor:ktor-server-netty")
-
-    implementation("io.grpc:grpc-kotlin-stub:1.3.0")
-    implementation("io.grpc:grpc-protobuf:1.55.1")
-    implementation("com.google.protobuf:protobuf-kotlin:3.23.0")
+    api("io.grpc:grpc-stub:${rootProject.ext["grpcVersion"]}")
+    api("io.grpc:grpc-protobuf:${rootProject.ext["grpcVersion"]}")
+    api("com.google.protobuf:protobuf-java-util:${rootProject.ext["protobufVersion"]}")
+    api("com.google.protobuf:protobuf-kotlin:${rootProject.ext["protobufVersion"]}")
+    api("io.grpc:grpc-kotlin-stub:${rootProject.ext["grpcKotlinVersion"]}")
 }
 
 
-
-application {
-    // Define the main class for the application.
-    mainClass.set("start.KotlinAppKt")
+kotlin {
+    jvmToolchain(8)
 }
 
-tasks.named<Test>("test") {
-    // Use JUnit Platform for unit tests.
-    useJUnitPlatform()
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
+    kotlinOptions {
+        freeCompilerArgs = listOf("-opt-in=kotlin.RequiresOptIn")
+    }
 }
 
-ext["grpcVersion"] = "1.54.1"
-ext["grpcKotlinVersion"] = "1.3.0" // CURRENT_GRPC_KOTLIN_VERSION
-ext["protobufVersion"] = "3.22.3"
-ext["coroutinesVersion"] = "1.7.0"
+
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.22.3"
+        artifact = "com.google.protobuf:protoc:${rootProject.ext["protobufVersion"]}"
     }
     plugins {
-        id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.54.1"
+        create("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:${rootProject.ext["grpcVersion"]}"
         }
-        id("grpckt") {
-            path = tasks.jar.get().archiveFile.get().asFile.absolutePath
+        create("grpckt") {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${rootProject.ext["grpcKotlinVersion"]}:jdk8@jar"
         }
     }
     generateProtoTasks {
         all().forEach {
-            if (it.name.startsWith("generateTestProto")) {
-                it.dependsOn("jar")
-            }
-
             it.plugins {
-                id("grpc")
-                id("grpckt")
+                create("grpc")
+                create("grpckt")
+            }
+            it.builtins {
+                create("kotlin")
             }
         }
     }

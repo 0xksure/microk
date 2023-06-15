@@ -8,4 +8,4 @@
  */
 
 rootProject.name = "kotlin-start"
-include("app")
+include("protos","app")

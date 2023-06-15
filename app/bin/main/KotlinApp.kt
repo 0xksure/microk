@@ -8,6 +8,14 @@ import io.ktor.server.netty.*
 import io.ktor.http.*
 
 
+package routeguide
+
+class RouteGuideServer(){
+    internal class RouteGuideService(){
+        override suspend fun getFeature(request: Point)
+    }
+}
+
 fun Application.module() {
 routing {
     route("/hello",HttpMethod.Get){
